@@ -1,0 +1,49 @@
+# This command initializes or reconstructs a modular (feature-based) FastAPI project structure.
+# Usage: /init-modules-structure
+
+description = "Initialize or reconstruct a FastAPI project using a module-based (feature-based) structure."
+
+args = [
+  { name = "project_name", description = "The name of the project. Defaults to the current folder name if not provided." }
+]
+
+prompt = """
+We're going to initialize or reconstruct a **FastAPI** project with a **modular (feature-based)** structure.
+
+## Goal
+Organize the project by features (e.g., `users`, `items`) rather than by component types (e.g., `models`, `schemas`). This improves maintainability and scalability.
+
+## Part 1: Initialization (New Project)
+If the current directory is empty or a `project_name` is provided (defaults to current folder name if `project_name` is empty), set up the following:
+1.  **Directories**:
+    - `app/modules/` (e.g., `app/modules/users/` containing `models.py`, `schemas.py`, `service.py`, `router.py`)
+    - `app/core/`
+    - `app/db/`
+2.  **Base Files**:
+    - `app/main.py`: Initialize the FastAPI app and include routers from `app.modules`.
+    - `app/core/config.py`: Pydantic Settings.
+    - `app/db/session.py`: Database engine and session (using SQLModel).
+    - `app/db/base.py`: Import all models here for Alembic discovery.
+    - `.env`, `pyproject.toml`, `.gitignore`.
+
+## Part 2: Reconstruction (Existing Simple Project)
+If the project already has a "simple" structure (dirs: `app/models/`, `app/schemas/`, `app/crud/`, `app/api/v1/endpoints/`):
+1.  **Identify Domains**: Determine domains from file names (e.g., `user.py` -> `user` domain).
+2.  **Create Modules**: For each domain, create `app/modules/[domain]/`.
+3.  **Migrate Files**:
+    - Move `app/models/[domain].py` to `app/modules/[domain]/models.py`.
+    - Move `app/schemas/[domain].py` to `app/modules/[domain]/schemas.py`.
+    - Move `app/crud/[domain].py` to `app/modules/[domain]/service.py`.
+    - Move `app/api/v1/endpoints/[domain]s.py` to `app/modules/[domain]/router.py`.
+4.  **Refactor Imports**: Update all relative and absolute imports in the moved files:
+    - Example: `from app.models.user import User` becomes `from .models import User` or `from app.modules.user.models import User`.
+    - Example: `from app.schemas.user import UserCreate` becomes `from .schemas import UserCreate` or `from app.modules.user.schemas import UserCreate`.
+5.  **Router Registry**: Update `app/main.py` (or a router hub like `app/api/v1/api.py`) to include routers from the new `app/modules/` locations.
+6.  **Cleanup**: **Delete the old "simple" directories** (`app/models/`, `app/schemas/`, `app/crud/`, `app/api/v1/endpoints/`) after successful migration.
+
+## Rules
+- **Modern Standards**: Use Python 3.10+, `Pydantic V2`, and `SQLModel`.
+- **Naming**: Use `service.py` for business/CRUD logic within modules.
+- **Relative Imports**: Prefer relative imports within a module for internal references.
+- **Persistence**: Ensure `app/db/base.py` imports all models for Alembic.
+"""

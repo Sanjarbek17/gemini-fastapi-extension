@@ -6,10 +6,12 @@ This extension is designed to help you build high-performance, maintainable, and
 
 ## 🚀 Features
 
-- **Standardized Project Structure**: Automatically initialize production-ready FastAPI project layouts.
+- **Standardized Project Structures**: Automatically initialize simple (component-based) or modular (feature-based) FastAPI project layouts.
+- **Migration Helper**: Reconstruct an existing project structure into a modular one automatically.
 - **AI Expert Rules**: Pre-configured guidelines for dependency injection, type hinting, pydantic 2.0, and async/await best practices.
 - **Smart Commands**:
   - `init-structure`: Bootstrap a new FastAPI project structure.
+  - `init-modules-structure`: Bootstrap or migrate a FastAPI project into a modular (feature-based) structure.
   - `create-model`: Generate SQLModel database models quickly.
   - `create-schema`: Generate Pydantic request/response schemas.
   - `add-endpoint`: Quickly add new API endpoints with routers.
