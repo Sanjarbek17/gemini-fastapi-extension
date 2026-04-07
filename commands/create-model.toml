@@ -1,0 +1,42 @@
+# This command creates a new SQLModel database model and its Pydantic schemas.
+# Usage: /create-model
+
+description = "Create a database model using SQLModel and associated Pydantic schemas."
+
+args = [
+  { name = "model_name", description = "The name of the database model (e.g., 'User')." }
+]
+
+prompt = """
+We're going to create a new **SQLModel** database model for: **{{model_name}}**.
+
+## Goal
+Automatically generate the SQLModel class (with `table=True`) and its corresponding Pydantic schemas for CRUD operations.
+
+## Process
+1.  **Analyze Model Name**:
+    - **Singular**: `{{model_name}}`
+    - **Plural**: (e.g., `{{model_name}}s`)
+2.  **Generate SQLModel**:
+    - Create `app/models/{{model_name.lower()}}.py` with:
+        - `{{model_name.title()}}` class inheriting from `SQLModel, table=True`.
+        - Standard fields: `id` (Primary Key), `created_at`, `updated_at`.
+        - Add initial placeholder fields for the model.
+3.  **Generate Pydantic Schemas**:
+    - Create `app/schemas/{{model_name.lower()}}.py` with:
+        - `{{model_name.title()}}Base`
+        - `{{model_name.title()}}Create`
+        - `{{model_name.title()}}Update`
+        - `{{model_name.title()}}InDB` (Response schema)
+4.  **Update Database Hub**:
+    - Import the new model in `app/db/base.py` (for Alembic auto-discovery).
+5.  **Refactor/Clean up**:
+    - Ensure logical imports (e.g., from `sqlmodel import SQLModel, Field`).
+
+## Rules
+- **SQLModel Standards**: Use `SQLModel` for ORM.
+- **Type Safety**: Include all necessary field types (e.g., `str`, `int`, `Optional`).
+- **Database Best Practices**: Include primary keys and timestamp fields.
+
+Start by creating the model and schema files.
+"""

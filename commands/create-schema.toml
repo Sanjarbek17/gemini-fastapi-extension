@@ -1,0 +1,35 @@
+# This command creates a new Pydantic schema for a resource.
+# Usage: /create-schema
+
+description = "Create a Pydantic schema for a resource (Generic request/response validation)."
+
+args = [
+  { name = "resource_name", description = "The name of the resource (e.g., 'user', 'item')." }
+]
+
+prompt = """
+We're going to create a new **Pydantic** schema for: **{{resource_name}}**.
+
+## Goal
+Automatically generate the Pydantic schema classes for a resource, including base, create, update, and response (InDB) models.
+
+## Process
+1.  **Analyze Resource Name**:
+    - **Singular**: `{{resource_name}}`
+    - **Plural**: (e.g., `{{resource_name}}s`)
+2.  **Generate Pydantic Schemas**:
+    - Create `app/schemas/{{resource_name.lower()}}.py` with:
+        - `{{resource_name.title()}}Base` (pydantic.BaseModel)
+        - `{{resource_name.title()}}Create` ({{resource_name.title()}}Base)
+        - `{{resource_name.title()}}Update` ({{resource_name.title()}}Base)
+        - `{{resource_name.title()}}InDB` (Response schema)
+3.  **Refactor/Clean up**:
+    - Ensure logical imports (e.g., from `pydantic import BaseModel, ConfigDict`).
+
+## Rules
+- **Modern Standards**: Use `Pydantic V2` features (e.g., `ConfigDict` instead of `class Config`).
+- **Type Safety**: Include all necessary field types.
+- **Documentation**: Use `Field` for descriptions and validation.
+
+Start by creating the schema file.
+"""

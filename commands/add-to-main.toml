@@ -1,0 +1,43 @@
+# This command registers a new router in the main FastAPI app or API hub.
+# Usage: /add-to-router
+
+description = "Register a new API router in the FastAPI application (main.py or api.py)."
+
+args = [
+  { name = "router_path", description = "The path to the router file (e.g., 'app/api/v1/endpoints/users.py')." }
+]
+
+prompt = """
+We're going to add a newly created router to the **FastAPI** application hub.
+
+## Goal
+Identify the router file and feature, then insert a new include statement into the main hub (usually `app/api/v1/api.py` or `app/main.py`), ensuring it's properly registered.
+
+## Process
+1.  **Analyze the Router**: 
+    - Read `router_path` to identify:
+        - **Feature Name**: (e.g., `user` from `app/api/v1/endpoints/users.py`)
+        - **Router Variable Name**: (e.g., `router` as typically used in FastAPI)
+    - Automatically derive a **Prefix** from the feature name (e.g., `/users`).
+2.  **Locate Router Hub**: 
+    - Verify that `app/api/v1/api.py` (or `app/main.py`) exists.
+3.  **Analyze Hub Configuration**:
+    - Read the hub file and identify its structure.
+    - Check for existing `include_router` calls.
+4.  **Update Hub**:
+    - **Add Import**: Add the relative import for the new router at the top of the hub.
+    - **Insert router**: 
+        - If a `APIRouter` hub exists, add the new router with the appropriate prefix and tags.
+        - If multiple versions exist, ensure it's in the correct version (v1, v2, etc.).
+    - Use the generated **Prefix** (e.g., `/users`) and **Tags** (e.g., `["users"]`).
+5.  **Refactor/Clean up**:
+    - Ensure logical ordering for imports and routes.
+    - Run `black` or `ruff` on the modified files.
+
+## Rules
+- **Automatic Generation**: Always derive the prefix and tags from the feature/page name.
+- **FastAPI Patterns**: Ensure compatibility with `APIRouter().include_router()` patterns.
+- **Architecture**: Adhere to the layered structure (importing from `app.api.v1.endpoints`).
+
+Start by analyzing the provided `router_path` and the router hub file.
+"""

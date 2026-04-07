@@ -1,0 +1,67 @@
+# This command initializes a standard, production-ready FastAPI project structure.
+# Usage: /init-structure
+
+description = "Initialize a standard, production-ready FastAPI project structure."
+
+args = [
+  { name = "project_name", description = "The name of the project." }
+]
+
+prompt = """
+We're going to initialize a new **FastAPI** project with a standard, maintainable structure.
+
+## Goal
+Set up the directories and base files required for a clean FastAPI application, following best practices.
+
+## Process
+1.  **Analyze current directory**: Check if any files already exist.
+2.  **Create Directories**:
+    - `app/`
+    - `app/api/v1/endpoints/`
+    - `app/core/`
+    - `app/db/`
+    - `app/models/`
+    - `app/schemas/`
+    - `app/crud/`
+    - `tests//`
+3.  **Generate Base Files**:
+    - `app/main.py`: Initialize the FastAPI app and include the API router.
+    - `app/api/v1/api.py`: Hub for feature routers.
+    - `app/core/config.py`: Settings using `PydanticSettings`.
+    - `app/db/session.py`: DB engine and session creation (using SQLModel).
+    - `app/db/base.py`: Import all models here for Alembic.
+    - `.env.example`: Template for environment variables.
+    - `pyproject.toml`: Modern configuration for dependencies and tools (e.g. ruff, black).
+    - `requirements.txt`: Standard list of dependencies for easy installation.
+    - `.gitignore`: Standard Python and environment exclusions.
+4.  **Refactor/Clean up**:
+    - Ensure relative imports are correct.
+    - Provide a command for the user to install dependencies (e.g., `pip install -r requirements.txt`).
+
+## Rules
+- **Modern Standards**: Use Python 3.10+ features and `Pydantic V2`.
+- **SQLModel**: Default to using SQLModel for ORM.
+- **Asynchronous**: Endpoints should be `async` where possible.
+- **Documentation**: Include summaries and types throughout.
+- **Dependencies**: Ensure `requirements.txt` includes:
+    - `fastapi`
+    - `uvicorn[standard]`
+    - `sqlmodel`
+    - `pydantic-settings`
+    - `alembic` (for migrations)
+    - `httpx` (for testing)
+    - `pytest`
+    - `python-jose[cryptography]` (for JWT)
+    - `passlib[bcrypt]` (for password hashing)
+- **GitIgnore**: Ensure `.gitignore` excludes:
+    - `__pycache__/`
+    - `.env`
+    - `.venv/`
+    - `*.pyc`
+    - `.pytest_cache/`
+    - `.coverage`
+    - `dist/`
+    - `build/`
+
+Start by creating the directory structure and the core files, then generate the `requirements.txt` and `.gitignore` with these patterns.
+"""

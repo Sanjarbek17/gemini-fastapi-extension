@@ -1,0 +1,45 @@
+# This command adds a new CRUD endpoint (router, schemas, and optional CRUD utility).
+# Usage: /add-endpoint
+
+description = "Add a new CRUD endpoint to the FastAPI application, including router and schemas."
+
+args = [
+  { name = "resource_name", description = "The name of the resource (e.g., 'user', 'item')." }
+]
+
+prompt = """
+We're going to add a new CRUD endpoint for the resource: **{{resource_name}}**.
+
+## Goal
+Automatically generate the router, Pydantic schemas (Read, Create, Update), and CRUD logic for the resource, then register it in the main API hub.
+
+## Process
+1.  **Analyze Resource Name**:
+    - **Singular**: `{{resource_name}}`
+    - **Plural**: (e.g., `{{resource_name}}s`)
+2.  **Generate Pydantic Schemas**: 
+    - Create `app/schemas/{{resource_name}}.py` with:
+        - `{{resource_name.title()}}Base`
+        - `{{resource_name.title()}}Create`
+        - `{{resource_name.title()}}Update`
+        - `{{resource_name.title()}}InDB` (Response schema)
+3.  **Generate Router**:
+    - Create `app/api/v1/endpoints/{{resource_name}}s.py` with:
+        - GET `/` (list all)
+        - POST `/` (create)
+        - GET `/{id}` (get by ID)
+        - PUT `/{id}` (update)
+        - DELETE `/{id}` (delete)
+4.  **Update API Hub**:
+    - Import the new router in `app/api/v1/api.py`.
+    - Register it using `api_router.include_router(...)`.
+5.  **Refactor/Clean up**:
+    - Ensure logical imports (e.g., from `app.schemas.{{resource_name}}`).
+
+## Rules
+- **Modern Standards**: Use `SQLModel` or `Session` dependency.
+- **RESTful**: Stick to standard HTTP methods and status codes.
+- **Documentation**: Use `response_model` for every endpoint.
+
+Start by creating the schema and router files.
+"""
