@@ -23,13 +23,11 @@ Serve a static web application from a `web/` directory at the project root.
 
 #### If Simple Structure:
 -   Update `app/main.py`.
--   Add imports: `from fastapi.staticfiles import StaticFiles` and `from fastapi.responses import FileResponse`.
--   Mount the directory: `app.mount("/static", StaticFiles(directory="web"), name="static")`.
--   Add the root route:
+-   Add imports: `from fastapi.staticfiles import StaticFiles`.
+-   **Mount at the end**: Add the mount call at the very end of `app/main.py` (after all API routes) to serve the web application at the root:
     ```python
-    @app.get("/")
-    async def serve_index():
-        return FileResponse("web/index.html")
+    # Ensure this is at the end of the file
+    app.mount("/", StaticFiles(directory="web", html=True), name="web")
     ```
 
 #### If Modular Structure:
@@ -39,16 +37,16 @@ Serve a static web application from a `web/` directory at the project root.
     from fastapi import APIRouter
     from fastapi.responses import FileResponse
     from fastapi.staticfiles import StaticFiles
-    import os
 
     router = APIRouter()
 
-    @router.get("/")
-    async def serve_index():
-        return FileResponse("web/index.html")
+    # Note: We usually don't need a specific root route if we use StaticFiles(html=True)
+    # but some apps prefer an explicit redirect or FileResponse.
+    # For Flutter, mounting root is usually best.
     ```
--   **Register Module**: Update `app/main.py` to import and include the web router: `from app.modules.web.router import router as web_router` and `app.include_router(web_router)`.
--   **Mount Static Files**: Add `app.mount("/static", StaticFiles(directory="web"), name="static")` in `app/main.py`.
+-   **Update app/main.py**:
+    -   Add `from fastapi.staticfiles import StaticFiles`.
+    -   **Mount at the end**: Add `app.mount("/", StaticFiles(directory="web", html=True), name="web")` at the very end of `app/main.py`. This serves `web/index.html` at `/` and all assets (js, json, etc.) at their expected root-relative paths.
 
 ## index.html Content
 ```html
