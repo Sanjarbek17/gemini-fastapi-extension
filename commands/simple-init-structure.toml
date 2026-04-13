@@ -26,6 +26,7 @@ Set up the directories and base files required for a clean FastAPI application, 
     - `tests//`
 3.  **Generate Base Files**:
     - `app/main.py`: Initialize the FastAPI app and include the API router.
+    - `main.py`: Root entry point that runs the app using `uvicorn.run("app.main:app", reload=True)`.
     - `app/api/v1/api.py`: Hub for feature routers.
     - `app/core/config.py`: Settings using `PydanticSettings`.
     - `app/db/session.py`: DB engine and session creation (using SQLModel).
