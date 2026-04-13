@@ -4,7 +4,7 @@
 description = "Initialize a standard, production-ready FastAPI project structure."
 
 args = [
-  { name = "project_name", description = "The name of the project." }
+  { name = "project_name", description = "The name of the project (defaults to current folder name if not specified)." }
 ]
 
 prompt = """
@@ -14,8 +14,9 @@ We're going to initialize a new **FastAPI** project with a standard, maintainabl
 Set up the directories and base files required for a clean FastAPI application, following best practices.
 
 ## Process
-1.  **Analyze current directory**: Check if any files already exist.
-2.  **Create Directories**:
+1.  **Determine Project Name**: If `project_name` is not provided, use the name of the current directory.
+2.  **Analyze current directory**: Check if any files already exist.
+3.  **Create Directories**:
     - `app/`
     - `app/api/v1/endpoints/`
     - `app/core/`
@@ -23,7 +24,8 @@ Set up the directories and base files required for a clean FastAPI application, 
     - `app/models/`
     - `app/schemas/`
     - `app/crud/`
-    - `tests//`
+    - `scripts/`
+    - `tests/`
 3.  **Generate Base Files**:
     - `app/main.py`: Initialize the FastAPI app and include the API router.
     - `main.py`: Root entry point that runs the app using `uvicorn.run("app.main:app", reload=True)`.
@@ -35,9 +37,41 @@ Set up the directories and base files required for a clean FastAPI application, 
     - `pyproject.toml`: Modern configuration for dependencies and tools (e.g. ruff, black).
     - `requirements.txt`: Standard list of dependencies for easy installation.
     - `.gitignore`: Standard Python and environment exclusions.
+    - `scripts/setup_service.sh`: Bash script to set up the systemd service on Ubuntu.
 4.  **Refactor/Clean up**:
     - Ensure relative imports are correct.
     - Provide a command for the user to install dependencies (e.g., `pip install -r requirements.txt`).
+    - The `scripts/setup_service.sh` should contain:
+      ```bash
+      #!/bin/bash
+      SERVICE_FILE="/etc/systemd/system/${project_name:-fastapi-app}.service"
+      echo "Creating systemd service file..."
+      sudo tee $SERVICE_FILE <<EOL
+      [Unit]
+      Description=${project_name:-fastapi-app} FastAPI Service
+      After=network.target
+
+      [Service]
+      User=$USER
+      Group=$USER
+      WorkingDirectory=$(pwd)
+      Environment="PATH=$(pwd)/venv/bin"
+      ExecStartPre=$(pwd)/venv/bin/alembic upgrade head
+      ExecStart=$(pwd)/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8117
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+      EOL
+
+      echo "Reloading systemd and enabling service..."
+      sudo systemctl daemon-reload
+      sudo systemctl enable ${project_name:-fastapi-app}
+      sudo systemctl restart ${project_name:-fastapi-app}
+
+      echo "Service status:"
+      systemctl status ${project_name:-fastapi-app} --no-pager
+      ```
 
 ## Rules
 - **Modern Standards**: Use Python 3.10+ features and `Pydantic V2`.

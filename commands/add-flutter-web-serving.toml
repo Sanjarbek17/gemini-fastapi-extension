@@ -1,0 +1,107 @@
+# This command adds functionality to serve a Flutter web build from the FastAPI application.
+# Usage: /add-flutter-web
+
+description = "Add Flutter web build serving capabilities to the FastAPI project."
+
+prompt = """
+We are going to prepare the FastAPI application to serve a Flutter web build. This command detects if the project uses a simple or modular structure and adapts accordingly.
+
+## Goal
+Serve a static web application from a `web/` directory at the project root.
+
+## Process
+
+### 1. Identify Project Structure
+-   Check if `app/modules/` exists. If it does, the project is **modular**.
+-   Otherwise, it is a **simple** structure.
+
+### 2. Create Web Assets
+-   Create a directory named `web/` at the **project root**.
+-   Create `web/index.html` with the provided placeholder content.
+
+### 3. Implement Serving Logic
+
+#### If Simple Structure:
+-   Update `app/main.py`.
+-   Add imports: `from fastapi.staticfiles import StaticFiles` and `from fastapi.responses import FileResponse`.
+-   Mount the directory: `app.mount("/static", StaticFiles(directory="web"), name="static")`.
+-   Add the root route:
+    ```python
+    @app.get("/")
+    async def serve_index():
+        return FileResponse("web/index.html")
+    ```
+
+#### If Modular Structure:
+-   **Create Module**: Create `app/modules/web/`.
+-   **Create Router**: Create `app/modules/web/router.py`:
+    ```python
+    from fastapi import APIRouter
+    from fastapi.responses import FileResponse
+    from fastapi.staticfiles import StaticFiles
+    import os
+
+    router = APIRouter()
+
+    @router.get("/")
+    async def serve_index():
+        return FileResponse("web/index.html")
+    ```
+-   **Register Module**: Update `app/main.py` to import and include the web router: `from app.modules.web.router import router as web_router` and `app.include_router(web_router)`.
+-   **Mount Static Files**: Add `app.mount("/static", StaticFiles(directory="web"), name="static")` in `app/main.py`.
+
+## index.html Content
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flutter Web + FastAPI</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+            color: white;
+            text-align: center;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 3rem;
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px rgba(255, 255, 255, 0.2) solid;
+        }
+        h1 { margin-bottom: 0.5rem; font-weight: 800; }
+        p { opacity: 0.9; font-size: 1.1rem; }
+        code { background: rgba(0,0,0,0.3); padding: 0.2rem 0.4rem; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Flutter Web + FastAPI</h1>
+        <p>Your modular web application is ready.</p>
+        <p>Replace the <code>web/</code> folder with your build outputs.</p>
+    </div>
+</body>
+</html>
+```
+
+## Validation
+-   Confirm imports are not duplicated.
+-   Ensure `app.mount` is called before or after other routers as appropriate (usually after is fine for static files).
+-   Verify the `web` folder is at the root.
+
+## Completion Message
+At the end of the process, tell the user:
+-   The full absolute path to the `web/` directory.
+-   Provide a helpful Flutter command to build for web into that folder, for example:
+    `flutter build web --output-dir=/path/to/your/project/web` (substitute the real path).
+"""
