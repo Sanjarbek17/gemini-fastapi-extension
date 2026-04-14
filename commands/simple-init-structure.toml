@@ -41,37 +41,7 @@ Set up the directories and base files required for a clean FastAPI application, 
 4.  **Refactor/Clean up**:
     - Ensure relative imports are correct.
     - Provide a command for the user to install dependencies (e.g., `pip install -r requirements.txt`).
-    - The `scripts/setup_service.sh` should contain:
-      ```bash
-      #!/bin/bash
-      SERVICE_FILE="/etc/systemd/system/${project_name:-fastapi-app}.service"
-      echo "Creating systemd service file..."
-      sudo tee $SERVICE_FILE <<EOL
-      [Unit]
-      Description=${project_name:-fastapi-app} FastAPI Service
-      After=network.target
-
-      [Service]
-      User=$USER
-      Group=$USER
-      WorkingDirectory=$(pwd)
-      Environment="PATH=$(pwd)/venv/bin"
-      ExecStartPre=$(pwd)/venv/bin/alembic upgrade head
-      ExecStart=$(pwd)/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8117
-      Restart=always
-
-      [Install]
-      WantedBy=multi-user.target
-      EOL
-
-      echo "Reloading systemd and enabling service..."
-      sudo systemctl daemon-reload
-      sudo systemctl enable ${project_name:-fastapi-app}
-      sudo systemctl restart ${project_name:-fastapi-app}
-
-      echo "Service status:"
-      systemctl status ${project_name:-fastapi-app} --no-pager
-      ```
+    - Generate a `scripts/setup_service.sh` bash script that configures the FastAPI app as a systemd service. This script should be tailored to the project's structure (correct entry point like `app.main:app`, correct port, etc.) and use the determined `project_name` for the service filename and description.
 
 ## Rules
 - **Modern Standards**: Use Python 3.10+ features and `Pydantic V2`.
