@@ -40,7 +40,9 @@ Always include the **`app`** service:
     env_file:
       - .env
     volumes:
+      - .:/app                     # mount current dir for instant hot-reload
       - ./ftp_data:/home/ftpuser   # adjust if FTP_PATH differs
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     networks:
       - <project_name>-net
 ```
@@ -81,7 +83,7 @@ networks:
 ```
 
 ### 4. Generate `Dockerfile` (only if one does not exist)
-Create a minimal, production-suitable Dockerfile:
+Create a dev-friendly Dockerfile. Because the current directory is mounted as a volume at `/app` by docker-compose, there is **no need to `COPY . .`** — the live source code is always available inside the container:
 ```dockerfile
 FROM python:3.11-slim
 
@@ -90,11 +92,12 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Source code is provided via the volume mount in docker-compose (. -> /app),
+# so no COPY . . is needed here. Changes on disk are reflected immediately.
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 ```
 
 ### 5. Post-generation summary
