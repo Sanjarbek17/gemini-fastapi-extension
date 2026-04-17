@@ -1,0 +1,117 @@
+# This command generates a docker-compose.yml for the current FastAPI project.
+# Usage: /add-docker-compose
+
+description = "Generate a docker-compose.yml for the current FastAPI project, with an optional MinIO service."
+
+args = [
+  { name = "include_minio", description = "Whether to include the MinIO service. Accepts 'yes' or 'no'. If not provided, the user will be asked." }
+]
+
+prompt = """
+We're going to generate a **docker-compose.yml** (and a **Dockerfile** if one doesn't already exist) for the current FastAPI project.
+
+## Goal
+Create production-ready Docker Compose configuration that containerises the FastAPI application. MinIO is optional and should be included only when requested.
+
+## Process
+
+### 1. Determine MinIO inclusion
+- If `include_minio` argument is `"yes"` → include the MinIO service.
+- If `include_minio` argument is `"no"` → skip the MinIO service.
+- If `include_minio` is **not provided** → ask the user: *"Do you want to include the MinIO service? (yes/no)"* before proceeding.
+
+### 2. Inspect the project
+- Read `.env` or `.env.example` to discover existing variable names (e.g. `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET_NAME`, `DATABASE_URL`, ports).
+- Check whether a `Dockerfile` already exists in the project root.
+- Check whether a `docker-compose.yml` already exists — if it does, warn the user and ask for confirmation before overwriting.
+
+### 3. Generate `docker-compose.yml`
+
+Always include the **`app`** service:
+```yaml
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: <project_name>-app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./ftp_data:/home/ftpuser   # adjust if FTP_PATH differs
+    networks:
+      - <project_name>-net
+```
+
+If MinIO **is** included, also add:
+- A `depends_on: [minio]` key to the `app` service.
+- A `minio` service:
+
+```yaml
+  minio:
+    image: minio/minio:latest
+    container_name: <project_name>-minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web console
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - <project_name>-net
+```
+- A named volume `minio_data:` under the top-level `volumes:` key.
+
+Always append a shared network:
+```yaml
+networks:
+  <project_name>-net:
+    driver: bridge
+```
+
+### 4. Generate `Dockerfile` (only if one does not exist)
+Create a minimal, production-suitable Dockerfile:
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+### 5. Post-generation summary
+After writing the files, print a clear summary:
+- Which files were created or updated.
+- All services and their exposed ports.
+- The quick-start command: `docker compose up -d`
+- If MinIO is included: mention the Web console URL `http://localhost:9001`.
+
+## Rules
+- **Variable substitution**: Use `${VAR:-default}` syntax for all env vars referenced inside the compose file so the file works even without a fully populated `.env`.
+- **Project name**: Derive `<project_name>` from the current directory name (snake_case → kebab-case).
+- **Do not hardcode secrets**: All sensitive values must come from the `.env` file or environment variables.
+- **Idempotent**: If `docker-compose.yml` already exists and the user confirms overwrite, replace it entirely with the newly generated content.
+- **Volumes for FTP**: Mount the FTP upload directory (`FTP_PATH` from `.env`, default `./ftp_data`) so the app can access uploaded files.
+- **Modern Compose**: Use `version: "3.9"` for broad compatibility.
+- **Dockerfile only if missing**: Never overwrite an existing Dockerfile unless the user explicitly asks.
+
+Start by checking whether `include_minio` was provided, then inspect the project files, and finally generate the required files.
+"""
