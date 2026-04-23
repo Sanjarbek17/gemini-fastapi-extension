@@ -4,119 +4,36 @@
 description = "Create CRUD (schemas, service, router) for an existing SQLModel with PAGINATION support."
 
 args = [
-  { name = "resource_name", description = "The name of the resource in singular TitleCase (e.g., 'Category')." },
-  { name = "module_name", description = "The name of the module in plural lowercase (e.g., 'categories')." }
+  { name = "module_path", description = "The path to the module directory (e.g., 'app/modules/cameras')." }
 ]
 
 prompt = """
-We're going to create CRUD functionality for the **{{resource_name}}** resource in the `app/modules/{{module_name}}` directory, including a **paginated list** endpoint.
+We're going to create CRUD functionality for an existing model in the module: **{{module_path}}**.
 
 ## Goal
-Generate `schemas.py`, `service.py`, and `router.py` for an **existing** model defined in `app/modules/{{module_name}}/models.py`.
+Generate `schemas.py`, `service.py`, and `router.py` based on the model defined in `{{module_path}}/models.py`, including a **paginated list** endpoint.
 
 ## Process
-1.  **Analyze Models**: Read `app/modules/{{module_name}}/models.py` to understand the fields of the `{{resource_name}}` model.
+1.  **Analyze Module**:
+    - Identify the **module name** from the path (e.g., `cameras` from `app/modules/cameras`).
+    - Read `{{module_path}}/models.py` to identify the main **resource name** (e.g., `Camera`) and its fields.
 2.  **Generate `schemas.py`**:
+    - Create `Read`, `Create`, and `Update` schemas in `{{module_path}}/schemas.py`.
     - Import `Page` from `app.schemas.common`.
-    - Create `Read`, `Create`, and `Update` schemas.
-    - Example:
-      ```python
-      from datetime import datetime
-      from typing import Optional
-      from sqlmodel import SQLModel
-      from .models import {{resource_name}}Base
-
-      class {{resource_name}}Read({{resource_name}}Base):
-          id: int
-          created_at: datetime
-          updated_at: datetime
-
-      class {{resource_name}}Create({{resource_name}}Base):
-          pass
-
-      class {{resource_name}}Update(SQLModel):
-          # All fields from Base but Optional
-          field_name: Optional[str] = None
-      ```
+    - Import the Base model from `.models`.
 3.  **Generate `service.py`**:
-    - Implement `create`, `get`, `list` (paginated), `update`, and `delete`.
-    - Use `func.count()` for the total count in pagination.
-    - Example (Service Pattern):
-      ```python
-      from typing import List, Optional
-      from sqlmodel import Session, select, func
-      from .models import {{resource_name}}
-      from . import schemas
-      from app.schemas.common import Page
-
-      def create_{{resource_name.lower()}}(session: Session, obj_in: schemas.{{resource_name}}Create) -> {{resource_name}}:
-          db_obj = {{resource_name}}.model_validate(obj_in)
-          session.add(db_obj)
-          session.commit()
-          session.refresh(db_obj)
-          return db_obj
-
-      def get_{{resource_name.lower()}}(session: Session, id: int) -> Optional[{{resource_name}}]:
-          return session.get({{resource_name}}, id)
-
-      def list_{{module_name}}(session: Session, page: int = 1, size: int = 10) -> Page[{{resource_name}}]:
-          # Get total count
-          total = session.exec(select(func.count()).select_from({{resource_name}})).one()
-          
-          # Get paginated items
-          statement = select({{resource_name}}).offset((page - 1) * size).limit(size)
-          items = session.exec(statement).all()
-          
-          return Page.create(items=items, total=total, page=page, size=size)
-
-      def update_{{resource_name.lower()}}(session: Session, id: int, obj_in: schemas.{{resource_name}}Update) -> Optional[{{resource_name}}]:
-          db_obj = get_{{resource_name.lower()}}(session, id)
-          if not db_obj: return None
-          update_data = obj_in.model_dump(exclude_unset=True)
-          for key, value in update_data.items():
-              setattr(db_obj, key, value)
-          session.add(db_obj)
-          session.commit()
-          session.refresh(db_obj)
-          return db_obj
-      ```
+    - Implement `create`, `get`, `list` (paginated), `update`, and `delete` in `{{module_path}}/service.py`.
+    - Use the identified resource name for function names (e.g., `create_camera`).
 4.  **Generate `router.py`**:
-    - Define standard FastAPI endpoints.
-    - The `list` endpoint should accept `page` and `size` parameters.
-    - Example (Router Pattern):
-      ```python
-      from fastapi import APIRouter, Depends, HTTPException, Query
-      from sqlmodel import Session
-      from typing import List
-      from app.db.session import get_session
-      from . import service, schemas
-      from app.schemas.common import Page
-
-      router = APIRouter()
-
-      @router.get("/", response_model=Page[schemas.{{resource_name}}Read])
-      def list_{{module_name}}(
-          page: int = Query(1, ge=1),
-          size: int = Query(10, ge=1, le=100),
-          session: Session = Depends(get_session)
-      ):
-          return service.list_{{module_name}}(session, page=page, size=size)
-
-      @router.get("/{id}", response_model=schemas.{{resource_name}}Read)
-      def get_{{resource_name.lower()}}(id: int, session: Session = Depends(get_session)):
-          db_obj = service.get_{{resource_name.lower()}}(session, id)
-          if not db_obj:
-              raise HTTPException(status_code=404, detail="{{resource_name}} not found")
-          return db_obj
-      ```
-
+    - Define FastAPI endpoints in `{{module_path}}/router.py`.
+    - The `list` endpoint must use pagination (`Page` schema).
 5.  **Integration**:
-    - Register the router in `app/main.py`: `app.include_router({{module_name}}_router, prefix="/{{module_name}}", tags=["{{module_name}}"])`.
+    - Register the router in `app/main.py`.
 
 ## Rules
-- **Pagination**: Use the `Page` schema from `app.schemas.common` for all list responses.
-- **Pydantic**: SQLModels are Pydantic; return models directly from services.
-- **Imports**: Use relative imports for internal module files and absolute imports for core/common files.
+- **Consistency**: Follow the style and naming conventions found in the project.
+- **Automation**: Use the resource name found in `models.py` consistently across all files.
+- **Pagination**: Always implement the list endpoint with pagination using `app.schemas.common.Page`.
 
-Start by reading the existing models.
+Start by reading `{{module_path}}/models.py`.
 """
