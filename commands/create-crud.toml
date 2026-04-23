@@ -1,0 +1,122 @@
+# This command creates a new feature module with full CRUD functionality for an EXISTING model.
+# Usage: /create-crud
+
+description = "Create CRUD (schemas, service, router) for an existing SQLModel with PAGINATION support."
+
+args = [
+  { name = "resource_name", description = "The name of the resource in singular TitleCase (e.g., 'Category')." },
+  { name = "module_name", description = "The name of the module in plural lowercase (e.g., 'categories')." }
+]
+
+prompt = """
+We're going to create CRUD functionality for the **{{resource_name}}** resource in the `app/modules/{{module_name}}` directory, including a **paginated list** endpoint.
+
+## Goal
+Generate `schemas.py`, `service.py`, and `router.py` for an **existing** model defined in `app/modules/{{module_name}}/models.py`.
+
+## Process
+1.  **Analyze Models**: Read `app/modules/{{module_name}}/models.py` to understand the fields of the `{{resource_name}}` model.
+2.  **Generate `schemas.py`**:
+    - Import `Page` from `app.schemas.common`.
+    - Create `Read`, `Create`, and `Update` schemas.
+    - Example:
+      ```python
+      from datetime import datetime
+      from typing import Optional
+      from sqlmodel import SQLModel
+      from .models import {{resource_name}}Base
+
+      class {{resource_name}}Read({{resource_name}}Base):
+          id: int
+          created_at: datetime
+          updated_at: datetime
+
+      class {{resource_name}}Create({{resource_name}}Base):
+          pass
+
+      class {{resource_name}}Update(SQLModel):
+          # All fields from Base but Optional
+          field_name: Optional[str] = None
+      ```
+3.  **Generate `service.py`**:
+    - Implement `create`, `get`, `list` (paginated), `update`, and `delete`.
+    - Use `func.count()` for the total count in pagination.
+    - Example (Service Pattern):
+      ```python
+      from typing import List, Optional
+      from sqlmodel import Session, select, func
+      from .models import {{resource_name}}
+      from . import schemas
+      from app.schemas.common import Page
+
+      def create_{{resource_name.lower()}}(session: Session, obj_in: schemas.{{resource_name}}Create) -> {{resource_name}}:
+          db_obj = {{resource_name}}.model_validate(obj_in)
+          session.add(db_obj)
+          session.commit()
+          session.refresh(db_obj)
+          return db_obj
+
+      def get_{{resource_name.lower()}}(session: Session, id: int) -> Optional[{{resource_name}}]:
+          return session.get({{resource_name}}, id)
+
+      def list_{{module_name}}(session: Session, page: int = 1, size: int = 10) -> Page[{{resource_name}}]:
+          # Get total count
+          total = session.exec(select(func.count()).select_from({{resource_name}})).one()
+          
+          # Get paginated items
+          statement = select({{resource_name}}).offset((page - 1) * size).limit(size)
+          items = session.exec(statement).all()
+          
+          return Page.create(items=items, total=total, page=page, size=size)
+
+      def update_{{resource_name.lower()}}(session: Session, id: int, obj_in: schemas.{{resource_name}}Update) -> Optional[{{resource_name}}]:
+          db_obj = get_{{resource_name.lower()}}(session, id)
+          if not db_obj: return None
+          update_data = obj_in.model_dump(exclude_unset=True)
+          for key, value in update_data.items():
+              setattr(db_obj, key, value)
+          session.add(db_obj)
+          session.commit()
+          session.refresh(db_obj)
+          return db_obj
+      ```
+4.  **Generate `router.py`**:
+    - Define standard FastAPI endpoints.
+    - The `list` endpoint should accept `page` and `size` parameters.
+    - Example (Router Pattern):
+      ```python
+      from fastapi import APIRouter, Depends, HTTPException, Query
+      from sqlmodel import Session
+      from typing import List
+      from app.db.session import get_session
+      from . import service, schemas
+      from app.schemas.common import Page
+
+      router = APIRouter()
+
+      @router.get("/", response_model=Page[schemas.{{resource_name}}Read])
+      def list_{{module_name}}(
+          page: int = Query(1, ge=1),
+          size: int = Query(10, ge=1, le=100),
+          session: Session = Depends(get_session)
+      ):
+          return service.list_{{module_name}}(session, page=page, size=size)
+
+      @router.get("/{id}", response_model=schemas.{{resource_name}}Read)
+      def get_{{resource_name.lower()}}(id: int, session: Session = Depends(get_session)):
+          db_obj = service.get_{{resource_name.lower()}}(session, id)
+          if not db_obj:
+              raise HTTPException(status_code=404, detail="{{resource_name}} not found")
+          return db_obj
+      ```
+
+5.  **Integration**:
+    - Register the router in `app/main.py`: `app.include_router({{module_name}}_router, prefix="/{{module_name}}", tags=["{{module_name}}"])`.
+
+## Rules
+- **Pagination**: Use the `Page` schema from `app.schemas.common` for all list responses.
+- **Pydantic**: SQLModels are Pydantic; return models directly from services.
+- **Imports**: Use relative imports for internal module files and absolute imports for core/common files.
+
+Start by reading the existing models.
+"""

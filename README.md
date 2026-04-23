@@ -16,6 +16,7 @@ This extension is designed to help you build high-performance, maintainable, and
   - `create-schema`: Generate Pydantic request/response schemas.
   - `add-endpoint`: Quickly add new API endpoints with routers.
   - `add-to-main`: Helper to register routers in the main application.
+  - `create-crud`: Generate a full module (models, schemas, service, router) with CRUD operations.
 
 ## 📦 Installation
 
